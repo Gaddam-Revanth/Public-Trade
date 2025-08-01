@@ -1,0 +1,90 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  balance   Float    @default(10000.00) // Starting balance for new users
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  portfolios Portfolio[]
+  trades     Trade[]
+  votes      Vote[]
+}
+
+model StockPrice {
+  id        String   @id @default(cuid())
+  price     Float
+  change    Float    @default(0)
+  volume    Int      @default(0)
+  timestamp DateTime @default(now())
+  
+  @@map("stock_prices")
+}
+
+model Portfolio {
+  id        String @id @default(cuid())
+  userId    String
+  shares    Int    @default(0)
+  avgPrice  Float  @default(0)
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId])
+  @@map("portfolios")
+}
+
+model Trade {
+  id          String      @id @default(cuid())
+  userId      String
+  type        TradeType
+  shares      Int
+  price       Float
+  totalValue  Float
+  status      TradeStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+  executedAt  DateTime?
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("trades")
+}
+
+model Vote {
+  id        String   @id @default(cuid())
+  userId    String
+  proposal  String
+  decision  Boolean  // true for yes, false for no
+  createdAt DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("votes")
+}
+
+enum TradeType {
+  BUY
+  SELL
+}
+
+enum TradeStatus {
+  PENDING
+  EXECUTED
+  CANCELLED
+}
